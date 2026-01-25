@@ -1,0 +1,18 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [1.0.0] - 2026-01-25
+
+### Initial Release
+
+- Presentation management: create, open, save, save_as, close
+- Slide management: add, delete, duplicate, move slides
+- Content tools: add_textbox, add_image, add_shape, add_table, add_chart
+- Modification tools: modify_shape, delete_shape, find_and_replace
+- Icon support with Phosphor Icons (~1,500 icons)
+- Slide snapshot for inspecting slide contents
+- Code evaluation tool for advanced python-pptx automation
+- macOS wrapper script (server.sh) for Homebrew cairo compatibility

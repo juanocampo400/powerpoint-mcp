@@ -1,0 +1,7 @@
+# Core dependencies
+python-pptx>=0.6.21
+mcp>=1.25.0,<2.0
+Pillow>=10.0.0
+
+# Optional - for icon support (SVG to PNG conversion)
+cairosvg>=2.7.0
