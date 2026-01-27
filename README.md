@@ -115,20 +115,7 @@ Or manually edit `~/.claude.json`:
 |------|-------------|
 | `evaluate_code` | Execute arbitrary python-pptx code |
 
-## Example Workflow
-
-```
-User: Create a presentation about Q4 results
-
-Claude:
-1. manage_presentation(action="create", file_path="Q4_Results.pptx")
-2. add_textbox(slide_number=1, text="Q4 2024 Results", font_size=44, ...)
-3. manage_slide(action="add")
-4. add_chart(slide_number=2, chart_type="bar", categories='["Q1","Q2","Q3","Q4"]', ...)
-5. manage_presentation(action="save")
-```
-
-## Working with Templates
+## Recommended Workflow & Next Steps
 
 This MCP server works best when paired with a well-prepared PowerPoint template. Here's the recommended workflow based on testing:
 
