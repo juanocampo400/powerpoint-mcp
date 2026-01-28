@@ -260,6 +260,11 @@ def register_modify_tools(mcp, state):
         """
         Modify an existing shape's properties.
 
+        FORMATTING Note: When setting the text parameter,
+        paragraph-level formatting (bullets, alignment, indentation) is preserved,
+        but run-level formatting (font name, size, color, bold, italic) is reset to defaults.
+        for updating styled text content, prefer finda_and_repllace instead.
+
         Args:
             slide_number: Target slide number (1-based)
             shape_id: ID of the shape to modify (use get_slide_snapshot to find IDs)
@@ -458,6 +463,12 @@ def register_modify_tools(mcp, state):
     ) -> str:
         """
         Find and replace text across the presentation or a specific slide.
+
+        PRESERVES FORMATTING: For text frames, this tool operates at run level,
+        keeping font properties (name, size, color, bold, italic) intac.
+        Prefer this over modify_shape when updating text in styled templates.
+
+        Note: Table cell replacements currently do not preserve formatting.
 
         Args:
             find_text: Text to search for

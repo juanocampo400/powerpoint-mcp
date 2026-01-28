@@ -19,7 +19,14 @@ def register_evaluate_tools(mcp, state):
         Execute arbitrary Python code with access to python-pptx for advanced operations.
 
         This is an escape hatch for operations not covered by other tools.
-        Use with caution - the code has full access to the presentation.
+
+        IMPORTANT: Before using this tool, verify standard tools cannot
+        accomplish the task. Prefer find_and_replace (preserves formatting),
+        modify_shape, or add_table over writing raw python-pptx code.
+
+        FORMATTING WARNING: Direct .text assignments destroy all formatting:
+            cell.text = "value"                # WRONG - destroys font, size, color
+            paragraph.runs[0].text = "value"    # RIGHT - preserves run formatting
 
         Available in execution context:
             - prs: The current Presentation object
