@@ -305,7 +305,7 @@ def register_modify_tools(mcp, state):
         FORMATTING Note: When setting the text parameter,
         paragraph-level formatting (bullets, alignment, indentation) is preserved,
         but run-level formatting (font name, size, color, bold, italic) is reset to defaults.
-        for updating styled text content, prefer finda_and_repllace instead.
+        for updating styled text content, prefer find_and_repllace instead.
 
         Args:
             slide_number: Target slide number (1-based)

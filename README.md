@@ -1,62 +1,71 @@
 # PowerPoint MCP Server
 
-This is a Model Context Protocol (MCP) server for creating and editing PowerPoint presentations. Built with Python and python-pptx.
+Create and edit PowerPoint presentations with Claude – locally, on any platform.
 
-## Features
+## Why This Exists
 
-- **Presentation Management**: Create, open, save, and close presentations
-- **Slide Operations**: Add, delete, duplicate, and reorder slides
-- **Content Creation**: Add textboxes, images, shapes, tables, and charts
-- **Icons**: Insert Phosphor SVG icons with custom colors
-- **Modifications**: Modify shapes, delete elements, find and replace text
-- **Escape Hatch**: Execute arbitrary python-pptx code for advanced operations
+I wanted a PowerPoint MCP server that works on any machine, even with corporate IT restrictions.
 
-## Requirements
+Other servers I tried had:
+- **External API calls** – Blocked by firewalls, require API keys, depend on third-party services
+- **COM automation** – Windows-only, requires PowerPoint to be open, steals focus while working
+- **Too many tools** – 30+ tools for animations and features I never use, slow to run
 
-- Python 3.9 or higher
-- No PowerPoint installation required – works directly with .pptx files
+This server is:
+- **100% local** – No external API calls, file operations happen locally through python-pptx
+- **Cross-platform** – Works on Windows, macOS, and Linux
+- **Non-intrusive** – Runs in background without launching windows that steal focus
+- **Lightweight** – Lean toolset for 95% of use case
 
-## Installation
+## Getting Started
 
-1. Clone the repository:
+### Install
+
+#### 1. Clone the repo:
 ```bash
 git clone https://github.com/juanocampo400/powerpoint-mcp.git
 cd powerpoint-mcp
 ```
 
-2. Install dependencies:
+#### 2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. (Optional) For icon support:
-   - **Windows**: `pip install cairosvg` (works if pycairo is installed, which is common with graphics/PDF tools)
-   - **macOS**: `brew install cairo pango && pip install cairosvg`
-
-## Usage with Claude
-
-Add to your Claude configuration using Claude Code CLI:
+#### 3. Add to Claude Code:
 
 **macOS:**
 ```bash
-cd powerpoint-mcp
 chmod +x server.sh
 claude mcp add powerpoint-mcp --scope user -- $PWD/server.sh
 ```
 
 **Windows (Git Bash):**
 ```bash
-cd powerpoint-mcp
 claude mcp add powerpoint-mcp --scope user -- python $PWD/server.py
 ```
 
-Note: `--scope user` makes the server available globally. Without it, the server only works when you're in the project directory.
+**Linux:**
+```bash
+claude mcp add powerpoint-mcp --scope user -- python3 "$PWD/server.py"
+```
+**Icon support (optional):**
+- Windows: `pip install cairosvg` (works if pycairo installed, common with graphics/PDF tools)
+- macOS: `brew install cairo pango && pip install cairosvg`
+- Linux: Install Cairo for your distribution, then `pip3 install cairosvg`
 
-> **Why `server.sh` on macOS?** The wrapper script sets `DYLD_FALLBACK_LIBRARY_PATH` so Python can find the Homebrew-installed cairo library (required for icon support). Without this, icons may not work even if cairo is installed correctly.
+<details>
+<summary><strong>Manual configuration & platform/icons notes</strong></summary>
 
-Or manually edit `~/.claude.json`:
+**Why `--scope user`?** Makes the server available globally. Without it, the server only works in the project directory.
 
-**macOS:**
+**Why `server.sh` on macOS?** The wrapper script sets `DYLD_FALLBACK_LIBRARY_PATH` so Python can find the Homebrew-installed cairo library (required for icon support).
+
+**Why Phosphor icons?** Fill-based SVGs (unlike Lucide's stroke-based SVGs) stay recolorable in PowerPoint. 1,000+ designs (vs Heroicons' ~300). MIT licensed.
+
+**Manual config** – Edit `~/.claude.json`:
+
+macOS:
 ```json
 {
   "mcpServers": {
@@ -69,7 +78,7 @@ Or manually edit `~/.claude.json`:
 }
 ```
 
-**Windows:**
+Windows:
 ```json
 {
   "mcpServers": {
@@ -81,10 +90,51 @@ Or manually edit `~/.claude.json`:
   }
 }
 ```
+</details>
+
+### Make Your First Deck
+
+Open Claude Code and say:
+
+> "Create a 5-slide presentation about [topic]"
+
+Claude will create a .pptx file, feel free to specify file path too.
+
+## Getting Better Results
+
+This works out of the box works. But for consistent output, here's a suggested progression:
+
+### Use a Template
+
+Download an existing template or one from PowerPoint's library, save it to your working folder, and ask Claude to use it:
+
+> "Create a presentation about [topic] using the template in my folder"
+
+### Prepare the Template
+
+For even better results, prep the template first or ask Claude to prep the template for you:
+
+> "Strip the existing text from this template and replace it with generic placeholder text to make it reusable"
+
+Then make your own tweaks to layouts, icon placement, text box sizes. Use this prepared template going forward.
+
+### Create a Skill
+
+Once you establish a workflow, package it into a Claude Code skill with your storytelling and branding guidelines. Claude will follow them automatically.
+
+**One tester noted**: *"I made a skill for building pitch decks with the PowerPoint MCP and one of my analytics MCPs and they're working together well...I uploaded a template to the skill and it went wayyy faster. Under 1 minute."*
+
+
+## Notes
+
+- Positions and sizes use **inches**
+- Colors are hex codes (e.g., `#FF0000` for red)
+- 1,500+ Phosphor icons bundled
+- One presentation open in memory at a time
 
 ## Available Tools
 
-### Core Management
+### Presentation & Slides
 | Tool | Description |
 |------|-------------|
 | `manage_presentation` | Open, create, save, save_as, close presentations |
@@ -95,8 +145,8 @@ Or manually edit `~/.claude.json`:
 ### Content Creation
 | Tool | Description |
 |------|-------------|
-| `add_textbox` | Add text with formatting (font, size, color, alignment) |
-| `add_image` | Insert images (PNG, JPG, etc.) |
+| `add_textbox` | Add text with formatting (font, size, color, alignment, bullets) |
+| `add_image` | Insert images with fit modes (fill, fit, stretch) |
 | `add_shape` | Add shapes (rectangle, oval, arrow, star, etc.) |
 | `add_table` | Create tables with data |
 | `add_chart` | Create charts (bar, column, line, pie, area) |
@@ -108,51 +158,11 @@ Or manually edit `~/.claude.json`:
 |------|-------------|
 | `modify_shape` | Change position, size, color, text of shapes |
 | `delete_shape` | Remove shapes by ID or name |
-| `find_and_replace` | Find and replace text across slides |
+| `find_and_replace` | Find and replace text across slides (preserves formatting) |
 | `get_table_content` | Get full table data (rows/columns) |
-| `modify_table_cell` | Update individual table cells with formatting preservation |
+| `modify_table_cell` | Update individual table cells (preserves formatting) |
 
 ### Advanced
 | Tool | Description |
 |------|-------------|
-| `evaluate_code` | Execute arbitrary python-pptx code |
-
-## Recommended Workflow & Next Steps
-
-This MCP server works best when paired with a well-prepared PowerPoint template. Here's the recommended workflow based on testing:
-
-### Quick Start (No Template Prep)
-
-1. Download a template from PowerPoint's built-in library (e.g., "Architecture Pitch Deck")
-2. Save it to your working folder
-3. Ask Claude Code to create a presentation using the template
-
-**Results:** Works fairly well out of the box – Claude Code can identify placeholders and populate content.
-
-### Better Results (Templatized)
-
-For improved results, ask Claude Code to prepare the template first:
-
-1. Save a PowerPoint template to your working folder
-2. Ask Claude Code to: *"Strip the existing text and replace it with generic placeholder text to make this a reusable template"*
-3. Make your own personal tweaks to master layouts and example slides (e.g., icon placement, text box size)
-4. Use the prepared template for your presentations
-
-**Results:** More consistent placeholder detection, cleaner content replacement, and better overall output.
-
-### Recommended Next Steps
-
-Once you have a workflow that works well for your use case:
-
-1. **Create a custom template** – Design or modify a template that matches your branding/style guidelines
-2. **Package into a skill** – Create a Claude Code skill that encodes your storytelling and branding guidelines, so Claude follows them automatically when creating presentations
-3. **Optional: Add a hook** – Configure a hook to load your skill before the MCP tools are invoked, ensuring consistent results every time
-
-This approach gets closer to "one-shotting" powerpoint slides consistently.
-
-## Notes
-
-- All positions and sizes use **inches** as the unit
-- Colors are specified as hex codes (e.g., "#FF0000" for red)
-- Icons are bundled from Phosphor Icons (1,500+ icons available)
-- The server keeps one presentation open in memory at a time
+| `evaluate_code` | Execute arbitrary python-pptx code for edge cases (aka the "escape hatch")|

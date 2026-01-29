@@ -46,5 +46,6 @@ Thumbs.db
 *.pptx
 test/
 
-# Development instructions (keep local)
+# Development instructions & Claude settings (keep local)
 CLAUDE.md
+.claude/
