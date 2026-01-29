@@ -44,7 +44,6 @@ Thumbs.db
 
 # Test outputs
 *.pptx
-!test_fixtures/*.pptx
 test/
 
 # Development instructions (keep local)

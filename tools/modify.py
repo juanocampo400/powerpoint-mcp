@@ -464,11 +464,9 @@ def register_modify_tools(mcp, state):
         """
         Find and replace text across the presentation or a specific slide.
 
-        PRESERVES FORMATTING: For text frames, this tool operates at run level,
-        keeping font properties (name, size, color, bold, italic) intac.
+        PRESERVES FORMATTING: operates at run level, keeps font properties (name,
+        size, color, bold, italic) intact for both text frames and table cells.
         Prefer this over modify_shape when updating text in styled templates.
-
-        Note: Table cell replacements currently do not preserve formatting.
 
         Args:
             find_text: Text to search for
@@ -518,23 +516,25 @@ def register_modify_tools(mcp, state):
 
                 # Also check tables
                 if shape.has_table:
-                    for row in shape.table.rows:
-                        for cell in row.cells:
-                            original_text = cell.text
-                            if match_case:
-                                if find_text in original_text:
-                                    cell.text = original_text.replace(find_text, replace_text)
-                                    replacements.append(f"Slide {slide_num}, Table cell")
-                            else:
-                                if find_text.lower() in original_text.lower():
-                                    import re
-                                    cell.text = re.sub(
-                                        re.escape(find_text),
-                                        replace_text,
-                                        original_text,
-                                        flags=re.IGNORECASE
-                                    )
-                                    replacements.append(f"Slide {slide_num}, Table cell")
+                    for row_idx, row in enumerate(shape.table.rows):
+                        for col_idx, cell in enumerate(row.cells):
+                            for paragraph in cell.text_frame.paragraphs:
+                                for run in paragraph.runs:
+                                    original_text = run.text
+                                    if match_case:
+                                        if find_text in original_text:
+                                            run.text = original_text.replace(find_text, replace_text)
+                                            replacements.append(f"Slide {slide_num}, Table row {row_idx+1} col {col_idx+1}")
+                                    else:
+                                        if find_text.lower() in original_text.lower():
+                                            import re
+                                            run.text = re.sub(
+                                                re.escape(find_text),
+                                                replace_text,
+                                                original_text,
+                                                flags=re.IGNORECASE
+                                            )
+                                            replacements.append(f"Slide {slide_num}, Table row {row_idx+1} col {col_idx+1}")
 
         if replacements:
             state.is_modified = True
