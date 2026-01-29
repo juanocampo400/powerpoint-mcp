@@ -109,6 +109,8 @@ Or manually edit `~/.claude.json`:
 | `modify_shape` | Change position, size, color, text of shapes |
 | `delete_shape` | Remove shapes by ID or name |
 | `find_and_replace` | Find and replace text across slides |
+| `get_table_content` | Get full table data (rows/columns) |
+| `modify_table_cell` | Update individual table cells with formatting preservation |
 
 ### Advanced
 | Tool | Description |

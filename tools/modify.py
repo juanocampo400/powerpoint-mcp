@@ -239,6 +239,48 @@ def _clear_paragraph_runs(paragraph):
         p_elem.remove(t_elem)
 
 
+def _find_table_shape(slide, slide_number, table_index=1, shape_id=None, shape_name=None):
+    """Find a table shape on a slide by ID, name, or index.
+
+    Args:
+        slide: The slide object
+        slide_number: Slide number (for error messages)
+        table_index: 1-based index of table (default 1)
+        shape_id: Shape ID (takes precedence)
+        shape_name: Shape name (takes precedence over table_index)
+
+    Returns:
+        Tuple of (table_shape, error_message). One will be None.
+    """
+    if shape_id is not None:
+        for s in slide.shapes:
+            if s.shape_id == shape_id:
+                if s.has_table:
+                    return s, None
+                return None, f"Error: Shape with ID {shape_id} is not a table"
+        return None, f"Error: Shape with ID {shape_id} not found on slide {slide_number}"
+
+    if shape_name is not None:
+        for s in slide.shapes:
+            if s.name == shape_name:
+                if s.has_table:
+                    return s, None
+                return None, f"Error: Shape named '{shape_name}' is not a table"
+        return None, f"Error: Shape named '{shape_name}' not found on slide {slide_number}"
+
+    # Find by table_index - sort by position for intuitive ordering
+    tables = sorted(
+        [s for s in slide.shapes if s.has_table],
+        key=lambda s: (s.top, s.left)
+    )
+    if not tables:
+        return None, f"Error: No tables found on slide {slide_number}"
+    if table_index < 1 or table_index > len(tables):
+        return None, f"Error: table_index {table_index} is out of range (1-{len(tables)})"
+
+    return tables[table_index - 1], None
+
+
 def register_modify_tools(mcp, state):
     """Register modification tools with the MCP server."""
 
@@ -541,6 +583,161 @@ def register_modify_tools(mcp, state):
             return f"Replaced '{find_text}' with '{replace_text}' in {len(replacements)} location(s):\n" + "\n".join(f"  - {r}" for r in replacements[:20]) + ("\n  ..." if len(replacements) > 20 else "")
         else:
             return f"No occurrences of '{find_text}' found"
+
+    @mcp.tool()
+    def get_table_content(
+        slide_number: int,
+        table_index: int = 1,
+        shape_id: int = None,
+        shape_name: str = None
+    ) -> str:
+        """
+        Get the content of a specific table.
+
+        Args:
+            slide_number: Target slide number (1-based)
+            table_index: 1-based index of the table on the slide (default 1, first table).
+                         Tables are ordered top-to-bottom, left-to-right by position.
+            shape_id: ID of the table shape (alternative to table_index)
+            shape_name: Name of the table shape (alternative to table_index)
+
+        Note: If shape_id or shape_name is provided, table_index is ignored.
+              shape_id takes precedence over shape_name.
+
+        Returns:
+            Table content as formatted text with row/column structure.
+            Newlines within cells are shown as \\n.
+        """
+        if state.presentation is None:
+            return "Error: No presentation is currently open"
+
+        prs = state.presentation
+        if slide_number < 1 or slide_number > len(prs.slides):
+            return f"Error: slide_number {slide_number} is out of range (1-{len(prs.slides)})"
+
+        slide = prs.slides[slide_number - 1]
+
+        table_shape, error = _find_table_shape(slide, slide_number, table_index, shape_id, shape_name)
+        if error:
+            return error
+
+        table = table_shape.table
+        rows = len(table.rows)
+        cols = len(table.columns)
+
+        # Build output
+        result = [f"Table '{table_shape.name}' (ID: {table_shape.shape_id})"]
+        result.append(f"Dimensions: {rows} rows x {cols} columns\n")
+
+        for row_idx, row in enumerate(table.rows):
+            row_cells = []
+            for col_idx, cell in enumerate(row.cells):
+                cell_text = cell.text.replace('\n', '\\n')  # Escape newlines for display
+                row_cells.append(cell_text)
+            result.append(f"Row {row_idx + 1}: {row_cells}")
+
+        return "\n".join(result)
+
+    @mcp.tool()
+    def modify_table_cell(
+        slide_number: int,
+        row: int,
+        column: int,
+        text: str,
+        table_index: int = 1,
+        shape_id: int = None,
+        shape_name: str = None
+    ) -> str:
+        """
+        Modify the content of a specific table cell with formatting preservation.
+
+        PRESERVES FORMATTING: If the cell has existing content with runs, the text
+        of the first run is replaced, preserving font properties (name, size, color,
+        bold, italic). For cells without runs, a new run is added to preserve
+        paragraph-level formatting.
+
+        Note on multi-paragraph cells: Only the first paragraph is kept; additional
+        paragraphs are removed. Use find_and_replace for finer control.
+
+        Note on merged cells: If the cell at (row, column) is part of a merged range,
+        python-pptx will modify the merge origin cell. This may affect a larger area
+        than expected.
+
+        Args:
+            slide_number: Target slide number (1-based)
+            row: 1-based row number
+            column: 1-based column number
+            text: New cell content (use \\n for newlines within the cell)
+            table_index: 1-based index of the table on the slide (default 1).
+                         Tables are ordered top-to-bottom, left-to-right by position.
+            shape_id: ID of the table shape (alternative to table_index)
+            shape_name: Name of the table shape (alternative to table_index)
+
+        Note: If shape_id or shape_name is provided, table_index is ignored.
+              shape_id takes precedence over shape_name.
+
+        Returns:
+            Success message with modification details, or error message
+        """
+        if state.presentation is None:
+            return "Error: No presentation is currently open"
+
+        prs = state.presentation
+        if slide_number < 1 or slide_number > len(prs.slides):
+            return f"Error: slide_number {slide_number} is out of range (1-{len(prs.slides)})"
+
+        slide = prs.slides[slide_number - 1]
+
+        table_shape, error = _find_table_shape(slide, slide_number, table_index, shape_id, shape_name)
+        if error:
+            return error
+
+        table = table_shape.table
+        num_rows = len(table.rows)
+        num_cols = len(table.columns)
+
+        # Validate row/column
+        if row < 1 or row > num_rows:
+            return f"Error: row {row} is out of range (1-{num_rows})"
+        if column < 1 or column > num_cols:
+            return f"Error: column {column} is out of range (1-{num_cols})"
+
+        cell = table.cell(row - 1, column - 1)  # Convert to 0-based
+        processed_text = _process_text_escapes(text)
+
+        try:
+            # Preserve formatting by modifying at run level
+            text_frame = cell.text_frame
+            paragraphs = list(text_frame.paragraphs)
+
+            if paragraphs:
+                first_para = paragraphs[0]
+                runs = list(first_para.runs)
+
+                if runs:
+                    # Cell has existing runs - modify first run to preserve its formatting
+                    runs[0].text = processed_text
+
+                    # Clear any additional runs in first paragraph (list already materialized)
+                    for run in runs[1:]:
+                        run._r.getparent().remove(run._r)
+                else:
+                    # Paragraph exists but has no runs - add a run to preserve paragraph formatting
+                    run = first_para.add_run()
+                    run.text = processed_text
+
+                # Remove additional paragraphs to keep cell clean
+                p_elements = text_frame._txBody.findall(qn('a:p'))
+                for p_elem in p_elements[1:]:
+                    text_frame._txBody.remove(p_elem)
+            else:
+                # No paragraphs at all (shouldn't happen, but fallback)
+                cell.text = processed_text
+
+            state.is_modified = True
+            return f"Successfully modified cell at row {row}, column {column} in table '{table_shape.name}'"
+        except Exception as e:
+            return f"Error modifying table cell: {str(e)}"
 
 
 def _parse_color(hex_color: str) -> RGBColor:

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] - 2026-01-28
+
+### Added
+- `get_table_content` tool for reading full table data without evaluate_code
+- `modify_table_cell` tool for updating individual cells with formatting preservation
+
 ## [1.0.1] - 2026-01-28
 
 ### Fixed
