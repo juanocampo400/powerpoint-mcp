@@ -19,6 +19,15 @@ This server is:
 
 ## Getting Started
 
+### Prerequisites
+
+**Python 3.8+** - Check with `python3 --version`
+
+If not installed:
+- macOS: `brew install python`
+- Windows: install using `winget isntall Python.Python.3.13` or install from the Microsoft store (search "Python 3.13")
+- Linux: use your package manager
+
 ### Install
 
 #### 1. Clone the repo:
@@ -28,30 +37,36 @@ cd powerpoint-mcp
 ```
 
 #### 2. Install dependencies:
+
+macOS/Linux:
+```bash
+pip3 install -r requirements.txt
+```
+Windows:
 ```bash
 pip install -r requirements.txt
 ```
 
 #### 3. Add to Claude Code:
 
-**macOS:**
+macOS:
 ```bash
 chmod +x server.sh
 claude mcp add powerpoint-mcp --scope user -- $PWD/server.sh
 ```
 
-**Windows (Git Bash):**
+Windows (Git Bash):
 ```bash
 claude mcp add powerpoint-mcp --scope user -- python $PWD/server.py
 ```
 
-**Linux:**
+Linux:
 ```bash
 claude mcp add powerpoint-mcp --scope user -- python3 "$PWD/server.py"
 ```
 **Icon support (optional):**
 - Windows: `pip install cairosvg` (works if pycairo installed, common with graphics/PDF tools)
-- macOS: `brew install cairo pango && pip install cairosvg`
+- macOS: `brew install cairo pango && pip3 install cairosvg`
 - Linux: Install Cairo for your distribution, then `pip3 install cairosvg`
 
 <details>
